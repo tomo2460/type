@@ -653,7 +653,6 @@ window.startGame = function (mode) {
     game.start(mode);
 };
 // --- Ranking System Integration ---
-// --- Ranking System Integration ---
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM Loaded: Check Ranking...");
 
@@ -691,13 +690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
 });
 
-// 2. Setup Modal Handlers
-const submitBtn = document.getElementById('submit-score-btn');
-const closeBtn = document.getElementById('close-modal-btn');
 
-if (submitBtn) submitBtn.addEventListener('click', submitScore);
-if (closeBtn) closeBtn.addEventListener('click', closeModal);
-});
 
 async function updateRankingDisplay() {
     const list = document.getElementById('ranking-list');
