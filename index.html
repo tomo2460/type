@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化学基礎一問一答 - TYPER LAB</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="lab-background"></div>
+    <div class="scanlines"></div>
+
+    <div id="game-container">
+        <div id="start-screen" class="overlay">
+            <h1>化学基礎一問一答</h1>
+            <div class="mode-select">
+                <button class="mode-btn" onclick="startGame('terms')">
+                    <span class="mode-title">用語タイピング</span>
+                    <span class="mode-desc">説明文 → 用語</span>
+                </button>
+                <button class="mode-btn" onclick="startGame('choice')">
+                    <span class="mode-title">4択クイズ</span>
+                    <span class="mode-desc">多肢選択モード</span>
+                </button>
+            </div>
+            <div class="instructions">
+                <p>TARGET: HIGH SCHOOL CHEMISTRY BASICS</p>
+                <p>制限時間内に答えを入力せよ</p>
+            </div>
+
+            <div id="ranking-container">
+                <h3>TOP 3 RANKING</h3>
+                <ul id="ranking-list">
+                    <li>Loading...</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="modal-overlay" class="hidden">
+            <div class="modal">
+                <h2>GAME FINISHED</h2>
+                <div class="modal-score">SCORE: <span id="final-score-display">0</span></div>
+                <p>名前を入力してランキングに登録！</p>
+                <input type="text" id="player-name-input" maxlength="10" placeholder="YOUR NAME">
+                <button id="submit-score-btn">登録 / SUBMIT</button>
+                <button id="close-modal-btn" class="secondary-btn">閉じる / CLOSE</button>
+            </div>
+        </div>
+
+        <header>
+            <h1>CHEMISTRY_TYPER_V2.1</h1>
+            <div class="stats-bar">
+                <div class="score-box">SCORE: <span id="score">0</span></div>
+                <div class="combo-box">COMBO: <span id="combo">0</span></div>
+                <div class="hp-container">
+                    <span>HP:</span>
+                    <div class="hp-bar-bg">
+                        <div class="hp-bar-fill" id="player-hp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bomb Timer -->
+            <div class="timer-container" id="timer-container">
+                <div class="timer-label">TIME:</div>
+                <div class="fuse-track">
+                    <div class="fuse-active" id="fuse-active">
+                        <div class="spark"></div>
+                    </div>
+                </div>
+                <div class="bomb-icon">💣</div>
+            </div>
+        </header>
+
+        <main>
+            <div class="element-card" id="element-card">
+                <div class="category-tag" id="category">QUESTION</div>
+                <div class="question-display" id="question-text"></div>
+                <div class="answer-display-area">
+                    <div class="answer-hidden" id="answer-kanji"></div>
+                    <div class="typing-display" id="typing-field"></div>
+
+                    <div class="choice-container hidden" id="choice-area">
+                        <button class="choice-btn" id="choice-1" onclick="game.handleChoice(0)">1</button>
+                        <button class="choice-btn" id="choice-2" onclick="game.handleChoice(1)">2</button>
+                        <button class="choice-btn" id="choice-3" onclick="game.handleChoice(2)">3</button>
+                        <button class="choice-btn" id="choice-4" onclick="game.handleChoice(3)">4</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="instruction">TYPE THE ANSWER</div>
+        </footer>
+    </div>
+
+    <div id="explosion-effect" class="explosion"></div>
+    <script src="quiz-data.js"></script>
+    <script type="module" src="ranking.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
