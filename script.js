@@ -653,29 +653,10 @@ window.startGame = function (mode) {
     game.start(mode);
 };
 // --- Ranking System Integration ---
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log("DOM Loaded: Check Ranking...");
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM Loaded: Setup...");
 
-    // Wait for Ranking if not ready (give it a moment for module to execute)
-    if (!window.Ranking) {
-        console.log("Ranking not ready, waiting...");
-        await new Promise(r => setTimeout(r, 500));
-    }
-
-    // 1. Initialize Firebase
-    if (window.Ranking) {
-        console.log("Initializing Ranking...");
-        const success = window.Ranking.initFirebase();
-        if (success) {
-            updateRankingDisplay();
-        }
-    } else {
-        console.error("Ranking module failed to load or blocked.");
-        const list = document.getElementById('ranking-list');
-        if (list) list.innerHTML = "<li>Ranking Unavailable (Check Console)</li>";
-    }
-
-    // 2. Setup Modal Handlers
+    // 1. Setup Modal Handlers IMMEDIATELY
     const submitBtn = document.getElementById('submit-score-btn');
     const closeBtn = document.getElementById('close-modal-btn');
 
@@ -688,6 +669,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    // 2. Initialize Firebase (Async/Non-blocking)
+    (async () => {
+        // Wait for Ranking if not ready
+        if (!window.Ranking) {
+            console.log("Ranking not ready, waiting...");
+            // Poll for up to 3 seconds
+            for (let i = 0; i < 6; i++) {
+                await new Promise(r => setTimeout(r, 500));
+                if (window.Ranking) break;
+            }
+        }
+
+        if (window.Ranking) {
+            console.log("Initializing Ranking...");
+            const success = window.Ranking.initFirebase();
+            if (success) {
+                updateRankingDisplay();
+            }
+        } else {
+            console.error("Ranking module failed to load or blocked.");
+            const list = document.getElementById('ranking-list');
+            if (list) list.innerHTML = "<li>Ranking Unavailable</li>";
+        }
+    })();
 });
 
 
