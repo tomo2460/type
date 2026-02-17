@@ -1,8 +1,8 @@
 // Firebase Ranking System
 // Using Firebase v9+ Modular SDK via CDN
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // TODO: User must replace this with their own Firebase Config
 // Get this from Firebase Console -> Project Settings -> General -> Your apps -> SDK setup and configuration
