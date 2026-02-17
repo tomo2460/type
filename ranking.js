@@ -37,25 +37,28 @@ export function initFirebase() {
 }
 
 // Save Score (Name, Score, Timestamp)
-export async function saveScore(name, score) {
+// Save Score (Name, Score, Mode)
+export async function saveScore(name, score, mode = 'terms') {
     if (!isInitialized) return;
+    const collectionName = mode === 'choice' ? 'ranking_choice' : 'ranking_terms';
     try {
-        await addDoc(collection(db, "scores"), {
+        await addDoc(collection(db, collectionName), {
             name: name,
             score: score,
             timestamp: new Date()
         });
-        console.log("Score saved!");
+        console.log(`Score saved to ${collectionName}!`);
     } catch (e) {
         console.error("Error saving score:", e);
     }
 }
 
 // Get Top 3 Scores
-export async function getTopScores(limitCount = 3) {
+export async function getTopScores(limitCount = 3, mode = 'terms') {
     if (!isInitialized) return [];
+    const collectionName = mode === 'choice' ? 'ranking_choice' : 'ranking_terms';
     try {
-        const q = query(collection(db, "scores"), orderBy("score", "desc"), limit(limitCount));
+        const q = query(collection(db, collectionName), orderBy("score", "desc"), limit(limitCount));
         const querySnapshot = await getDocs(q);
         const scores = [];
         querySnapshot.forEach((doc) => {

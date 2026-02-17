@@ -686,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Initializing Ranking...");
             const success = window.Ranking.initFirebase();
             if (success) {
-                updateRankingDisplay();
+                updateRankingDisplay('terms');
             }
         } else {
             console.error("Ranking module failed to load or blocked.");
@@ -696,16 +696,24 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 });
 
+let currentRankingTab = 'terms';
+window.switchRanking = function (mode) {
+    currentRankingTab = mode;
+    // Update UI
+    document.querySelectorAll('.rank-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(`rank-tab-${mode}`).classList.add('active');
+    updateRankingDisplay(mode);
+};
 
-
-async function updateRankingDisplay() {
+async function updateRankingDisplay(mode = 'terms') {
     const list = document.getElementById('ranking-list');
     if (!list) return;
 
     list.innerHTML = '<li>Loading...</li>';
 
     if (window.Ranking) {
-        const scores = await window.Ranking.getTopScores(3);
+        // Fetch separate ranking based on mode
+        const scores = await window.Ranking.getTopScores(3, mode);
         list.innerHTML = '';
         if (scores.length === 0) {
             list.innerHTML = '<li>No Data</li>';
@@ -736,11 +744,13 @@ async function submitScore() {
     const name = nameInput ? (nameInput.value.trim() || "NO NAME") : "NO NAME";
     const score = scoreDisplay ? parseInt(scoreDisplay.textContent) : 0;
 
+    // Determine mode from game instance
+    const mode = game.mode || 'terms';
+
     if (window.Ranking) {
-        await window.Ranking.saveScore(name, score);
-        alert('ランキングに登録しました！');
+        await window.Ranking.saveScore(name, score, mode);
+        alert(`${mode === 'choice' ? '4択クイズ' : '用語タイピング'}のランキングに登録しました！`);
         closeModal();
-        updateRankingDisplay(); // Refresh ranking
     } else {
         alert('ランキングシステムが利用できません。');
         closeModal();
