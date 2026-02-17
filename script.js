@@ -20,7 +20,6 @@ const database = [
     { category: 'term', question: "物質が三態（固体・液体・気体）の間で変化すること", answer: "状態変化", reading: "ジョウタイヘンカ" },
     { category: 'term', question: "気体分子が熱運動によって空間全体に広がる現象", answer: "拡散", reading: "カクサン" },
     { category: 'term', question: "構成粒子が規則正しく配列している固体", answer: "結晶", reading: "ケッショウ" },
-    { category: 'term', question: "粒子が不規則に配列している固体（ガラスなど）", answer: "アモルファス", reading: "アモルファス" },
     { category: 'term', question: "固体から直接気体になる変化", answer: "昇華", reading: "ショウカ" },
     { category: 'term', question: "気体から直接固体になる変化", answer: "凝華", reading: "ギョウカ" },
     { category: 'term', question: "絶対零度を基準とした温度目盛り", answer: "絶対温度", reading: "ゼッタイオンド" },
@@ -654,21 +653,50 @@ window.startGame = function (mode) {
     game.start(mode);
 };
 // --- Ranking System Integration ---
+// --- Ranking System Integration ---
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM Loaded: Check Ranking...");
+
+    // Wait for Ranking if not ready (give it a moment for module to execute)
+    if (!window.Ranking) {
+        console.log("Ranking not ready, waiting...");
+        await new Promise(r => setTimeout(r, 500));
+    }
+
     // 1. Initialize Firebase
     if (window.Ranking) {
+        console.log("Initializing Ranking...");
         const success = window.Ranking.initFirebase();
         if (success) {
             updateRankingDisplay();
         }
+    } else {
+        console.error("Ranking module failed to load or blocked.");
+        const list = document.getElementById('ranking-list');
+        if (list) list.innerHTML = "<li>Ranking Unavailable (Check Console)</li>";
     }
 
     // 2. Setup Modal Handlers
     const submitBtn = document.getElementById('submit-score-btn');
     const closeBtn = document.getElementById('close-modal-btn');
 
-    if (submitBtn) submitBtn.addEventListener('click', submitScore);
+    console.log("Setup Buttons:", submitBtn, closeBtn);
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', () => {
+            console.log("Submit Clicked");
+            submitScore();
+        });
+    }
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
+});
+
+// 2. Setup Modal Handlers
+const submitBtn = document.getElementById('submit-score-btn');
+const closeBtn = document.getElementById('close-modal-btn');
+
+if (submitBtn) submitBtn.addEventListener('click', submitScore);
+if (closeBtn) closeBtn.addEventListener('click', closeModal);
 });
 
 async function updateRankingDisplay() {
