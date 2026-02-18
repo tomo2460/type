@@ -510,12 +510,22 @@ class Game {
         this.dom.answerKanji.style.transition = 'opacity 0.2s';
 
         // Display Setup
+        let questionText = "";
         if (this.mode === 'terms') {
-            this.dom.question.innerHTML = `[${this.questionsPlayed}/${this.maxQuestions}] ${this.currentQuestion.question}`;
+            questionText = this.currentQuestion.question;
+            this.dom.question.innerHTML = `[${this.questionsPlayed}/${this.maxQuestions}] ${questionText}`;
             this.dom.answerKanji.innerHTML = this.currentQuestion.answer;
         } else if (this.mode === 'choice') {
-            this.dom.question.innerHTML = `[${this.questionsPlayed}/${this.maxQuestions}] ${this.currentQuestion.text}`;
+            questionText = this.currentQuestion.text;
+            this.dom.question.innerHTML = `[${this.questionsPlayed}/${this.maxQuestions}] ${questionText}`;
             this.dom.answerKanji.innerHTML = this.currentQuestion.options[this.currentQuestion.correctIndex];
+        }
+
+        // Layout Fix: Adjust font size for long text
+        if (questionText.length > 25) {
+            this.dom.question.classList.add('long-text');
+        } else {
+            this.dom.question.classList.remove('long-text');
         }
 
         // Mode Specific Setup

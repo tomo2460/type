@@ -275,6 +275,12 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: font-size 0.2s; /* Smooth transition */
+}
+
+/* For long questions (approx > 30 chars) */
+.question-display.long-text {
+    font-size: 1.4rem;
 }
 
 .answer-display-area {
