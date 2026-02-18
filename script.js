@@ -814,7 +814,10 @@ async function updateRankingDisplay(mode = 'terms') {
 
     if (window.Ranking) {
         // Fetch separate ranking based on mode
+        console.log(`Fetching rankings for mode: ${mode}`);
         const scores = await window.Ranking.getTopScores(3, mode);
+        console.log("Scores retrieved:", scores);
+
         list.innerHTML = '';
         if (scores.length === 0) {
             list.innerHTML = "<div class='ranking-row loading'>No Data Yet</div>";
@@ -826,8 +829,10 @@ async function updateRankingDisplay(mode = 'terms') {
             row.className = `ranking-row rank-${index + 1}`;
 
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-            const displayTime = entry.time ? Number(entry.time).toFixed(1) + 's' : '-';
-            const displayCombo = entry.maxCombo !== undefined ? entry.maxCombo : '-';
+
+            // Handle 0 correctly (0 is falsy)
+            const displayTime = (entry.time !== undefined && entry.time !== null) ? Number(entry.time).toFixed(1) + 's' : '-';
+            const displayCombo = (entry.maxCombo !== undefined && entry.maxCombo !== null) ? entry.maxCombo : '-';
 
             row.innerHTML = `
                 <span class="rank-num">${medal} ${index + 1}</span>
@@ -868,6 +873,7 @@ async function submitScore() {
     }
 
     if (window.Ranking) {
+        console.log("Submitting Score:", { name, score, maxCombo, timeTaken, mode });
         await window.Ranking.saveScore(name, score, maxCombo, timeTaken, mode);
         alert(`${mode === 'choice' ? '4択クイズ' : '用語タイピング'}のランキングに登録しました！`);
         closeModal();

@@ -45,8 +45,8 @@ export async function saveScore(name, score, maxCombo, time, mode = 'terms') {
         await addDoc(collection(db, collectionName), {
             name: name,
             score: score,
-            maxCombo: maxCombo,
-            time: time,
+            maxCombo: maxCombo !== undefined ? maxCombo : 0,
+            time: time !== undefined ? time : 0,
             timestamp: new Date()
         });
         console.log(`Score saved to ${collectionName}!`);
