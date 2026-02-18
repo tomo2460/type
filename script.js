@@ -361,7 +361,93 @@ class Game {
             explosion: document.getElementById('explosion-effect')
         };
 
+        // Audio System (Web Audio API)
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
         document.addEventListener('keydown', (e) => this.handleInput(e));
+    }
+
+    playTypeSound() {
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        const t = this.audioCtx.currentTime;
+
+        // 1. Noise Burst (Mechanical Clack)
+        const bufferSize = this.audioCtx.sampleRate * 0.05; // 50ms
+        const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = this.audioCtx.createGain();
+
+        // Filter to make it less harsh
+        const filter = this.audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 2000;
+
+        noiseGain.gain.setValueAtTime(0.15, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.audioCtx.destination);
+        noise.start(t);
+
+        // 2. Short Tone (Key mechanism)
+        const osc = this.audioCtx.createOscillator();
+        const oscGain = this.audioCtx.createGain();
+
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.03);
+        osc.type = 'square';
+
+        oscGain.gain.setValueAtTime(0.05, t);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.03);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.audioCtx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.05);
+    }
+
+    playExplosionSound() {
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        const t = this.audioCtx.currentTime;
+        const duration = 1.2;
+
+        // White Noise Generation
+        const bufferSize = this.audioCtx.sampleRate * duration;
+        const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.audioCtx.createBufferSource();
+        noise.buffer = buffer;
+
+        // Envelope (Volume)
+        const gain = this.audioCtx.createGain();
+        gain.gain.setValueAtTime(0.8, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+
+        // Lowpass Filter Sweep (The "Boom" effect)
+        const filter = this.audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, t);
+        filter.frequency.exponentialRampToValueAtTime(50, t + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.audioCtx.destination);
+
+        noise.start(t);
     }
 
     start(mode) {
@@ -484,6 +570,7 @@ class Game {
 
     handleTimeout() {
         clearInterval(this.timerInterval);
+        this.playExplosionSound();
 
         this.dom.explosion.classList.add('explode-anim');
         setTimeout(() => this.dom.explosion.classList.remove('explode-anim'), 1000);
@@ -517,6 +604,9 @@ class Game {
 
         // Typing Mode
         if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey) return;
+
+        this.playTypeSound();
+
         const result = this.romajiEngine.checkInput(e.key);
         if (result.valid) {
             this.correctInput(result.completed);
@@ -692,8 +782,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             console.error("Ranking module failed to load or blocked.");
-            const list = document.getElementById('ranking-list');
-            if (list) list.innerHTML = "<li>Ranking Unavailable</li>";
+            const list = document.querySelector('.ranking-body');
+            if (list) list.innerHTML = "<div class='ranking-row loading'>Ranking Unavailable</div>";
         }
     })();
 });
@@ -708,24 +798,32 @@ window.switchRanking = function (mode) {
 };
 
 async function updateRankingDisplay(mode = 'terms') {
-    const list = document.getElementById('ranking-list');
+    const list = document.querySelector('.ranking-body');
     if (!list) return;
 
-    list.innerHTML = '<li>Loading...</li>';
+    list.innerHTML = "<div class='ranking-row loading'>Loading...</div>";
 
     if (window.Ranking) {
         // Fetch separate ranking based on mode
         const scores = await window.Ranking.getTopScores(3, mode);
         list.innerHTML = '';
         if (scores.length === 0) {
-            list.innerHTML = '<li>No Data</li>';
+            list.innerHTML = "<div class='ranking-row loading'>No Data Yet</div>";
             return;
         }
 
         scores.forEach((entry, index) => {
-            const li = document.createElement('li');
-            li.innerHTML = `<span>${index + 1}. ${entry.name}</span> <span>${entry.score}</span>`;
-            list.appendChild(li);
+            const row = document.createElement('div');
+            row.className = `ranking-row rank-${index + 1}`;
+
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+
+            row.innerHTML = `
+                <span class="rank-num">${medal} ${index + 1}</span>
+                <span class="rank-name">${entry.name}</span>
+                <span class="rank-score">${entry.score}</span>
+            `;
+            list.appendChild(row);
         });
     }
 }

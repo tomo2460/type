@@ -18,13 +18,15 @@
         <div id="start-screen" class="overlay">
             <h1>化学基礎一問一答</h1>
             <div class="mode-select">
-                <button class="mode-btn" onclick="startGame('terms')">
-                    <span class="mode-title">用語タイピング</span>
-                    <span class="mode-desc">説明文 → 用語</span>
+                <button class="mode-btn pop-btn" onclick="startGame('terms')">
+                    <span class="mode-icon">📖</span>
+                    <span class="mode-title">TERMS</span>
+                    <span class="mode-desc">用語タイピング</span>
                 </button>
-                <button class="mode-btn" onclick="startGame('choice')">
-                    <span class="mode-title">4択クイズ</span>
-                    <span class="mode-desc">多肢選択モード</span>
+                <button class="mode-btn pop-btn" onclick="startGame('choice')">
+                    <span class="mode-icon">❓</span>
+                    <span class="mode-title">QUIZ</span>
+                    <span class="mode-desc">4択クイズ</span>
                 </button>
             </div>
             <div class="instructions">
@@ -38,9 +40,18 @@
                     <button id="rank-tab-terms" class="rank-tab active" onclick="switchRanking('terms')">TYPING</button>
                     <button id="rank-tab-choice" class="rank-tab" onclick="switchRanking('choice')">QUIZ</button>
                 </div>
-                <ul id="ranking-list">
-                    <li>Loading...</li>
-                </ul>
+                <div id="ranking-list" class="ranking-grid">
+                    <div class="ranking-header">
+                        <span>RANK</span>
+                        <span>NAME</span>
+                        <span>SCORE</span>
+                        <span>COMBO</span>
+                        <span>TIME</span>
+                    </div>
+                    <div class="ranking-body">
+                        <div class="ranking-row loading">Loading...</div>
+                    </div>
+                </div>
             </div>
         </div>
 

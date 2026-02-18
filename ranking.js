@@ -37,14 +37,16 @@ export function initFirebase() {
 }
 
 // Save Score (Name, Score, Timestamp)
-// Save Score (Name, Score, Mode)
-export async function saveScore(name, score, mode = 'terms') {
+// Save Score (Name, Score, Mode, MaxCombo, Time)
+export async function saveScore(name, score, mode = 'terms', maxCombo = 0, time = '-') {
     if (!isInitialized) return;
     const collectionName = mode === 'choice' ? 'ranking_choice' : 'ranking_terms';
     try {
         await addDoc(collection(db, collectionName), {
             name: name,
             score: score,
+            maxCombo: maxCombo,
+            time: time,
             timestamp: new Date()
         });
         console.log(`Score saved to ${collectionName}!`);
