@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /scores/{scoreId} {
+      // 読み取りは誰でも可能
+      allow read: if true;
+
+      // 作成のみ許可（更新・削除は不可 → 改ざん防止）
+      allow create: if isValidScore();
+      
+      // 更新と削除は禁止
+      allow update, delete: if false;
+
+      function isValidScore() {
+        let incoming = request.resource.data;
+        
+        // 必須フィールドの存在チェック
+        return incoming.keys().hasAll(['name', 'score', 'title', 'timestamp'])
+          // スコアの型と範囲チェック (0〜100万点まで)
+          && incoming.score is number
+          && incoming.score >= 0
+          && incoming.score <= 1000000
+          
+          // 名前の文字数制限 (1〜10文字)
+          && incoming.name is string
+          && incoming.name.size() > 0
+          && incoming.name.size() <= 10
+          
+          // 称号のチェック
+          && incoming.title is string
+          
+          // タイムスタンプはサーバー時間であること
+          && incoming.timestamp == request.time;
+      }
+    }
+  }
+}
