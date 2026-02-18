@@ -323,8 +323,11 @@ class Game {
     constructor() {
         this.score = 0;
         this.combo = 0;
+        this.maxCombo = 0; // Track Max Combo
         this.maxHP = 100;
         this.hp = 100;
+        this.startTime = 0; // Track Start Time
+        this.endTime = 0;   // Track End Time
         this.timeLeft = 20;
         this.timerMax = 20;
         this.timerInterval = null;
@@ -454,9 +457,11 @@ class Game {
         this.mode = mode;
         this.score = 0;
         this.combo = 0;
+        this.maxCombo = 0;
         this.hp = this.maxHP;
         this.questionsPlayed = 0;
         this.isGameOver = false;
+        this.startTime = Date.now(); // Start Timer
 
         this.dom.startScreen.classList.add('hidden');
         this.updateStats();
@@ -626,6 +631,7 @@ class Game {
             this.score += 100 + timeBonus + (this.combo * 10);
 
             this.combo++;
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
             this.updateStats();
             this.dom.card.classList.add('correct-pulse');
             setTimeout(() => this.dom.card.classList.remove('correct-pulse'), 300);
@@ -680,6 +686,7 @@ class Game {
             this.score += 100 + timeBonus + (this.combo * 10);
 
             this.combo++;
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
             this.updateStats();
             this.dom.card.classList.add('correct-pulse');
             setTimeout(() => this.dom.card.classList.remove('correct-pulse'), 300);
@@ -722,6 +729,7 @@ class Game {
 
     gameClear() {
         this.stopGame();
+        this.endTime = Date.now();
         // HP Bonus
         const hpBonus = this.hp * 100;
         this.score += hpBonus;
@@ -733,6 +741,7 @@ class Game {
 
     gameOver() {
         this.stopGame();
+        this.endTime = Date.now();
         // Show Modal instead of Alert
         showRankingModal(this.score);
     }
@@ -817,11 +826,15 @@ async function updateRankingDisplay(mode = 'terms') {
             row.className = `ranking-row rank-${index + 1}`;
 
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+            const displayTime = entry.time ? Number(entry.time).toFixed(1) + 's' : '-';
+            const displayCombo = entry.maxCombo !== undefined ? entry.maxCombo : '-';
 
             row.innerHTML = `
                 <span class="rank-num">${medal} ${index + 1}</span>
                 <span class="rank-name">${entry.name}</span>
                 <span class="rank-score">${entry.score}</span>
+                <span class="rank-combo">${displayCombo}</span>
+                <span class="rank-time">${displayTime}</span>
             `;
             list.appendChild(row);
         });
@@ -846,9 +859,16 @@ async function submitScore() {
 
     // Determine mode from game instance
     const mode = game.mode || 'terms';
+    const maxCombo = game.maxCombo || 0;
+
+    // Calculate Time
+    let timeTaken = 0;
+    if (game.startTime && game.endTime) {
+        timeTaken = (game.endTime - game.startTime) / 1000; // seconds
+    }
 
     if (window.Ranking) {
-        await window.Ranking.saveScore(name, score, mode);
+        await window.Ranking.saveScore(name, score, maxCombo, timeTaken, mode);
         alert(`${mode === 'choice' ? '4択クイズ' : '用語タイピング'}のランキングに登録しました！`);
         closeModal();
     } else {

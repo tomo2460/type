@@ -37,8 +37,8 @@ export function initFirebase() {
 }
 
 // Save Score (Name, Score, Timestamp)
-// Save Score (Name, Score, Mode, MaxCombo, Time)
-export async function saveScore(name, score, mode = 'terms', maxCombo = 0, time = '-') {
+// Save Score (Name, Score, MaxCombo, Time, Mode)
+export async function saveScore(name, score, maxCombo, time, mode = 'terms') {
     if (!isInitialized) return;
     const collectionName = mode === 'choice' ? 'ranking_choice' : 'ranking_terms';
     try {
