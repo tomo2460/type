@@ -626,9 +626,16 @@ class Game {
             clearInterval(this.timerInterval);
             this.dom.choiceBtns[idx].classList.add('choice-correct');
 
-            // Score Calculation: Base 100 + TimeBonus (sec*10) + ComboBonus
-            const timeBonus = Math.ceil(this.timeLeft) * 10;
-            this.score += 100 + timeBonus + (this.combo * 10);
+            // Score Calculation: Base 100 + TimeBonus (sec*20) + ComboBonus (Staged)
+            const timeBonus = Math.ceil(this.timeLeft) * 20;
+
+            let comboMultiplier = 10;
+            if (this.combo >= 20) comboMultiplier = 160;
+            else if (this.combo >= 15) comboMultiplier = 80;
+            else if (this.combo >= 10) comboMultiplier = 40;
+            else if (this.combo >= 5) comboMultiplier = 20;
+
+            this.score += 100 + timeBonus + (this.combo * comboMultiplier);
 
             this.combo++;
             if (this.combo > this.maxCombo) this.maxCombo = this.combo;
@@ -681,9 +688,16 @@ class Game {
         if (completed) {
             clearInterval(this.timerInterval);
 
-            // Score Calculation: Base 100 + TimeBonus (sec*10) + ComboBonus
-            const timeBonus = Math.ceil(this.timeLeft) * 10;
-            this.score += 100 + timeBonus + (this.combo * 10);
+            // Score Calculation: Base 100 + TimeBonus (sec*20) + ComboBonus (Staged)
+            const timeBonus = Math.ceil(this.timeLeft) * 20;
+
+            let comboMultiplier = 10;
+            if (this.combo >= 20) comboMultiplier = 160;
+            else if (this.combo >= 15) comboMultiplier = 80;
+            else if (this.combo >= 10) comboMultiplier = 40;
+            else if (this.combo >= 5) comboMultiplier = 20;
+
+            this.score += 100 + timeBonus + (this.combo * comboMultiplier);
 
             this.combo++;
             if (this.combo > this.maxCombo) this.maxCombo = this.combo;
@@ -846,6 +860,18 @@ async function updateRankingDisplay(mode = 'terms') {
     }
 }
 
+// Security Constants
+const SECRET_SALT = "TypeQuiz_Secret_2026";
+
+// Simple Hash Function (DJB2 variant)
+function generateHash(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 33) ^ str.charCodeAt(i);
+    }
+    return hash >>> 0; // Ensure unsigned 32-bit integer
+}
+
 function showRankingModal(score) {
     const modal = document.getElementById('modal-overlay');
     const scoreDisplay = document.getElementById('final-score-display');
@@ -872,9 +898,14 @@ async function submitScore() {
         timeTaken = (game.endTime - game.startTime) / 1000; // seconds
     }
 
+    // Generate Signature
+    // String: score + maxCombo + time + salt
+    const signStr = `${score}${maxCombo}${timeTaken}${SECRET_SALT}`;
+    const signature = generateHash(signStr);
+
     if (window.Ranking) {
-        console.log("Submitting Score:", { name, score, maxCombo, timeTaken, mode });
-        await window.Ranking.saveScore(name, score, maxCombo, timeTaken, mode);
+        console.log("Submitting Score:", { name, score, maxCombo, timeTaken, mode, signature });
+        await window.Ranking.saveScore(name, score, maxCombo, timeTaken, mode, signature);
         alert(`${mode === 'choice' ? '4択クイズ' : '用語タイピング'}のランキングに登録しました！`);
         closeModal();
     } else {

@@ -36,17 +36,50 @@ export function initFirebase() {
     }
 }
 
-// Save Score (Name, Score, Timestamp)
-// Save Score (Name, Score, MaxCombo, Time, Mode)
-export async function saveScore(name, score, maxCombo, time, mode = 'terms') {
+// Security Constants
+const MAX_POSSIBLE_SCORE = 40000; // Buffer for 33200 max
+const SECRET_SALT = "TypeQuiz_Secret_2026"; // Must match script.js
+
+// Simple Hash Function (DJB2 variant)
+function generateHash(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 33) ^ str.charCodeAt(i);
+    }
+    return hash >>> 0; // Ensure unsigned 32-bit integer
+}
+
+// Save Score (Name, Score, MaxCombo, Time, Mode, Signature)
+export async function saveScore(name, score, maxCombo, time, mode = 'terms', signature = null) {
     if (!isInitialized) return;
+
+    // 1. Sanity Check
+    if (score > MAX_POSSIBLE_SCORE) {
+        console.warn(`Cheating Detected: Score ${score} exceeds max possible.`);
+        alert("Integrity Check Failed: Abnormal Score Detected.");
+        return;
+    }
+
+    // 2. Signature Check
+    // Re-create the string: score + maxCombo + time + salt
+    // Note: time is passed as number (seconds) or '-' string. We need to match script.js format exactly.
+    // In script.js we will simple concatenate: score + maxCombo + time + salt
+    const checkStr = `${score}${maxCombo}${time}${SECRET_SALT}`;
+    const calculatedHash = generateHash(checkStr);
+
+    if (signature != calculatedHash) {
+        console.warn(`Cheating Detected: Invalid Signature. Expected ${calculatedHash}, got ${signature}`);
+        alert("Integrity Check Failed: Signature Mismatch.");
+        return;
+    }
+
     const collectionName = mode === 'choice' ? 'ranking_choice' : 'ranking_terms';
     try {
         await addDoc(collection(db, collectionName), {
             name: name,
             score: score,
-            maxCombo: maxCombo !== undefined ? maxCombo : 0,
-            time: time !== undefined ? time : 0,
+            maxCombo: maxCombo,
+            time: time,
             timestamp: new Date()
         });
         console.log(`Score saved to ${collectionName}!`);
