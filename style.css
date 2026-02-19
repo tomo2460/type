@@ -280,7 +280,12 @@ h1 {
 
 /* For long questions (approx > 30 chars) */
 .question-display.long-text {
-    font-size: 1.4rem;
+    font-size: 1.7rem;
+}
+
+/* For extra long questions (approx > 40 chars) */
+.question-display.extra-long-text {
+    font-size: 1.3rem;
 }
 
 .answer-display-area {

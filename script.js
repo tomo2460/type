@@ -182,6 +182,13 @@ const comboMap = {
     'ファ': ['fa'], 'フェ': ['fe'], 'フォ': ['fo'],
 };
 
+function kanaToHira(str) {
+    return str.replace(/[\u30a1-\u30f6]/g, function (match) {
+        var chr = match.charCodeAt(0) - 0x60;
+        return String.fromCharCode(chr);
+    });
+}
+
 class RomajiEngine {
     constructor() {
         this.targetKana = "";
@@ -341,6 +348,7 @@ class Game {
         this.maxQuestions = 20;
 
         this.isGameOver = false;
+        this.questionDeck = []; // Deck to store shuffled questions
 
         this.romajiEngine = new RomajiEngine();
 
@@ -453,6 +461,52 @@ class Game {
         noise.start(t);
     }
 
+    playCorrectSound() {
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        const t = this.audioCtx.currentTime;
+
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+
+        // High pitched "Ding-Dong" (Sine wave)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1000, t);
+        osc.frequency.setValueAtTime(1500, t + 0.1);
+
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.3);
+    }
+
+    playWrongSound() {
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        const t = this.audioCtx.currentTime;
+
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+
+        // Low pitched "Buzz" (Sawtooth wave)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, t);
+        osc.frequency.linearRampToValueAtTime(100, t + 0.3);
+
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.3);
+    }
+
     start(mode) {
         this.mode = mode;
         this.score = 0;
@@ -465,6 +519,18 @@ class Game {
 
         this.dom.startScreen.classList.add('hidden');
         this.updateStats();
+
+        // Create and shuffle deck
+        let pool = [];
+        if (this.mode === 'terms') {
+            pool = [...database]; // Copy array
+        } else if (this.mode === 'choice') {
+            pool = [...quizData]; // Copy array
+        }
+
+        // Shuffle the pool to create a deck
+        this.questionDeck = this.shuffle(pool);
+
         this.nextQuestion();
     }
 
@@ -476,22 +542,15 @@ class Game {
     nextQuestion() {
         if (this.isGameOver) return;
 
-        if (this.questionsPlayed >= this.maxQuestions) {
+        if (this.questionsPlayed >= this.maxQuestions || this.questionDeck.length === 0) {
             this.gameClear();
             return;
         }
 
         this.questionsPlayed++;
 
-        let pool = [];
-        if (this.mode === 'terms') {
-            pool = database;
-        } else if (this.mode === 'choice') {
-            pool = quizData;
-        }
-
-        const idx = Math.floor(Math.random() * pool.length);
-        this.currentQuestion = pool[idx];
+        // Pop from deck to avoid duplicates
+        this.currentQuestion = this.questionDeck.pop();
 
         // Timer Reset
         this.timeLeft = this.timerMax;
@@ -521,11 +580,12 @@ class Game {
             this.dom.answerKanji.innerHTML = this.currentQuestion.options[this.currentQuestion.correctIndex];
         }
 
-        // Layout Fix: Adjust font size for long text
-        if (questionText.length > 25) {
+        // Layout Fix: Adjust font size based on text length
+        this.dom.question.className = 'question-display'; // Reset classes
+        if (questionText.length >= 40) {
+            this.dom.question.classList.add('extra-long-text');
+        } else if (questionText.length >= 30) {
             this.dom.question.classList.add('long-text');
-        } else {
-            this.dom.question.classList.remove('long-text');
         }
 
         // Mode Specific Setup
@@ -633,6 +693,7 @@ class Game {
     handleChoice(idx) {
         if (idx === this.correctChoiceIdx) {
             // Correct
+            this.playCorrectSound();
             clearInterval(this.timerInterval);
             this.dom.choiceBtns[idx].classList.add('choice-correct');
 
@@ -656,6 +717,7 @@ class Game {
             setTimeout(() => this.nextQuestion(), 500);
         } else {
             // Wrong
+            this.playWrongSound();
             this.dom.choiceBtns[idx].classList.add('choice-wrong');
             this.damagePlayer(10);
             this.combo = 0;
@@ -667,20 +729,38 @@ class Game {
         const displayDiv = this.dom.typing;
         displayDiv.innerHTML = '';
 
-        const fullStr = this.romajiEngine.displayStr;
-        // Total characters correctly typed so far (confirmed + pending buffer)
-        const typedLength = this.romajiEngine.confirmedRomaji.length + this.romajiEngine.pendingInput.length;
+        // 1. Render Completed Kana (Converted to Hiragana)
+        const completedKana = this.romajiEngine.targetKana.substring(0, this.romajiEngine.currentPos);
+        const completedHira = kanaToHira(completedKana);
 
-        for (let i = 0; i < fullStr.length; i++) {
+        for (const char of completedHira) {
+            const span = document.createElement('span');
+            span.textContent = char;
+            span.className = 'char-correct'; // Use existing style
+            displayDiv.appendChild(span);
+        }
+
+        // 2. Render Pending Input (Romaji)
+        const pending = this.romajiEngine.pendingInput;
+        for (const char of pending) {
+            const span = document.createElement('span');
+            span.textContent = char;
+            span.className = 'char-correct';
+            displayDiv.appendChild(span);
+        }
+
+        // 3. Render Remaining (Hidden Romaji / Hint)
+        const fullRomaji = this.romajiEngine.displayStr; // Full romaji string
+        const confirmedLength = this.romajiEngine.confirmedRomaji.length;
+        const pendingLength = this.romajiEngine.pendingInput.length;
+        const startIdx = confirmedLength + pendingLength;
+
+        for (let i = startIdx; i < fullRomaji.length; i++) {
             const span = document.createElement('span');
 
-            if (i < typedLength) {
-                // Character already typed
-                span.textContent = fullStr[i];
-                span.className = 'char-correct';
-            } else if (this.showHint && i === typedLength) {
-                // Hint for next character (on mistake)
-                span.textContent = fullStr[i];
+            if (this.showHint && i === startIdx) {
+                // Hint for next character
+                span.textContent = fullRomaji[i];
                 span.className = 'char-wrong';
             } else {
                 // Hidden character
